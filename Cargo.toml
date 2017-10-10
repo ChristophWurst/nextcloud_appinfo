@@ -1,0 +1,7 @@
+[package]
+name = "nextcloud_app"
+version = "0.1.0"
+authors = ["Christoph Wurst <christoph@winzerhof-wurst.at>"]
+
+[dependencies]
+xpath_reader = "0.3.2"
