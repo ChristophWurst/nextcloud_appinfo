@@ -1,6 +1,6 @@
-extern crate nextcloud_app;
+extern crate nextcloud_appinfo;
 
-use nextcloud_app::get_appinfo;
+use nextcloud_appinfo::get_appinfo;
 use std::env;
 use std::path::Path;
 use std::process;
