@@ -14,6 +14,15 @@ pub struct AppInfo {
     name: String,
 }
 
+impl AppInfo {
+    pub fn id(&self) -> &String {
+        &self.id
+    }
+    pub fn name(&self) -> &String {
+        &self.name
+    }
+}
+
 fn load_appinfo(file_path: &Path) -> Result<String, io::Error> {
     let file = File::open(file_path)?;
     let mut buf_reader = BufReader::new(file);
@@ -26,8 +35,8 @@ fn parse_appinfo(xml: &String) -> Result<AppInfo, error::Error> {
     let context = Context::new();
     let reader = XpathStrReader::new(xml, &context).unwrap();
 
-    let id: String = reader.read("//info/id/text()")?;
-    let name: String = reader.read("//info/name/text()")?;
+    let id = reader.read("//info/id/text()")?;
+    let name = reader.read("//info/name/text()")?;
 
     Ok(AppInfo {
         id: id,
@@ -39,6 +48,9 @@ pub fn get_appinfo(app_path: &Path) -> Result<AppInfo, error::Error> {
     let mut appinfo_path = PathBuf::from(app_path);
     appinfo_path.push("appinfo");
     appinfo_path.push("info.xml");
+    if !appinfo_path.exists() {
+        return Err(error::Error::General);
+    }
     let xml = load_appinfo(appinfo_path.as_path())?;
     parse_appinfo(&xml)
 }

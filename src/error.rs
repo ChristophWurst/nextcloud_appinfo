@@ -1,3 +1,4 @@
+use std::error;
 use std::fmt;
 use std::io;
 use xpath_reader;
@@ -7,6 +8,24 @@ pub enum Error {
     General,
     Io(io::Error),
     Xml(xpath_reader::XpathError),
+}
+
+impl error::Error for Error {
+    fn description(&self) -> &str {
+        match *self {
+            Error::General => "Unknown error",
+            Error::Io(ref err) => err.description(),
+            Error::Xml(ref err) => err.description(),
+        }
+    }
+
+    fn cause(&self) -> Option<&error::Error> {
+        match *self {
+            Error::General => None,
+            Error::Io(ref err) => Some(err),
+            Error::Xml(ref err) => Some(err),
+        }
+    }
 }
 
 impl fmt::Display for Error {
