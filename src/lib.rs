@@ -1,12 +1,16 @@
+#[macro_use]
+extern crate failure;
 extern crate xpath_reader;
+
+pub mod error;
 
 use std::io::{self, BufReader};
 use std::fs::File;
 use std::io::prelude::*;
 use std::path::{Path, PathBuf};
-use xpath_reader::{Context, XpathReader, XpathStrReader};
 
-pub mod error;
+use failure::{Error, SyncFailure};
+use xpath_reader::{Context, XpathReader, XpathStrReader};
 
 #[derive(Debug)]
 pub struct AppInfo {
@@ -31,25 +35,27 @@ fn load_appinfo(file_path: &Path) -> Result<String, io::Error> {
     Ok(contents)
 }
 
-fn parse_appinfo(xml: &String) -> Result<AppInfo, error::Error> {
+fn parse_appinfo(xml: &String) -> Result<AppInfo, Error> {
     let context = Context::new();
-    let reader = XpathStrReader::new(xml, &context).unwrap();
+    let reader = XpathStrReader::new(xml, &context)
+        .map_err(|err| SyncFailure::new(err))?;
 
-    let id = reader.read("//info/id/text()")?;
-    let name = reader.read("//info/name/text()")?;
+    let id = reader
+        .read("//info/id/text()")
+        .map_err(|err| error::Error::Xml { err: SyncFailure::new(err) })?;
+    let name = reader
+        .read("//info/name/text()")
+        .map_err(|err| error::Error::Xml { err: SyncFailure::new(err) })?;
 
-    Ok(AppInfo {
-        id: id,
-        name: name,
-    })
+    Ok(AppInfo { id: id, name: name })
 }
 
-pub fn get_appinfo(app_path: &Path) -> Result<AppInfo, error::Error> {
+pub fn get_appinfo(app_path: &Path) -> Result<AppInfo, Error> {
     let mut appinfo_path = PathBuf::from(app_path);
     appinfo_path.push("appinfo");
     appinfo_path.push("info.xml");
     if !appinfo_path.exists() {
-        return Err(error::Error::General);
+        bail!(error::Error::InfoXmlMissing);
     }
     let xml = load_appinfo(appinfo_path.as_path())?;
     parse_appinfo(&xml)
@@ -99,5 +105,24 @@ mod tests {
 
         assert_eq!("mail", actual.id);
         assert_eq!("Mail", actual.name);
+    }
+
+    #[test]
+    fn it_loads_the_appinfo_file() {
+        let path = Path::new("examples/twofactor_u2f/appinfo/info.xml");
+
+        let file = load_appinfo(&path).unwrap();
+
+        assert!(file.len() > 0);
+    }
+
+    #[test]
+    fn it_handles_notfound_errors() {
+        // There's no appinfo/info.xml in here
+        let path = Path::new(".");
+
+        let result = load_appinfo(&path);
+
+        assert!(result.is_err());
     }
 }
