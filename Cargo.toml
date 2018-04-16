@@ -13,4 +13,4 @@ exclude = [
 
 [dependencies]
 failure = "0.1.1"
-xpath_reader = "0.3.2"
+xpath_reader = "0.4.0"
