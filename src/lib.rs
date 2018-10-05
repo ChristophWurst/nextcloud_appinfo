@@ -1,5 +1,6 @@
 #[macro_use]
 extern crate failure;
+extern crate semver;
 extern crate xpath_reader;
 
 pub mod error;
@@ -10,12 +11,14 @@ use std::io::prelude::*;
 use std::path::{Path, PathBuf};
 
 use failure::{Error, SyncFailure};
+pub use semver::Version;
 use xpath_reader::{Context, XpathReader, XpathStrReader};
 
 #[derive(Debug)]
 pub struct AppInfo {
     id: String,
     name: String,
+    version: Version,
 }
 
 impl AppInfo {
@@ -24,6 +27,9 @@ impl AppInfo {
     }
     pub fn name(&self) -> &String {
         &self.name
+    }
+    pub fn version(&self) -> &Version {
+        &self.version
     }
 }
 
@@ -46,8 +52,11 @@ fn parse_appinfo(xml: &String) -> Result<AppInfo, Error> {
     let name = reader
         .read("//info/name/text()")
         .map_err(|err| error::Error::Xml { err: SyncFailure::new(err) })?;
+    let version: String = reader
+        .read("//info/version/text()")
+        .map_err(|err| error::Error::Xml { err: SyncFailure::new(err) })?;
 
-    Ok(AppInfo { id: id, name: name })
+    Ok(AppInfo { id: id, name: name, version: Version::parse(&version)? })
 }
 
 pub fn get_appinfo(app_path: &Path) -> Result<AppInfo, Error> {
@@ -105,6 +114,7 @@ mod tests {
 
         assert_eq!("mail", actual.id);
         assert_eq!("Mail", actual.name);
+        assert_eq!(Version::parse("0.7.3").unwrap(), actual.version);
     }
 
     #[test]
