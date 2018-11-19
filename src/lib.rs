@@ -5,14 +5,14 @@ extern crate xpath_reader;
 
 pub mod error;
 
-use std::io::{self, BufReader};
 use std::fs::File;
 use std::io::prelude::*;
+use std::io::{self, BufReader};
 use std::path::{Path, PathBuf};
 
 use failure::{Error, SyncFailure};
 pub use semver::Version;
-use xpath_reader::{Context, XpathReader, XpathStrReader};
+use xpath_reader::{Context, Reader};
 
 #[derive(Debug)]
 pub struct AppInfo {
@@ -43,20 +43,30 @@ fn load_appinfo(file_path: &Path) -> Result<String, io::Error> {
 
 fn parse_appinfo(xml: &String) -> Result<AppInfo, Error> {
     let context = Context::new();
-    let reader = XpathStrReader::new(xml, &context)
-        .map_err(|err| SyncFailure::new(err))?;
+    let reader = Reader::from_str(xml, Some(&context)).map_err(|err| SyncFailure::new(err))?;
 
     let id = reader
         .read("//info/id/text()")
-        .map_err(|err| error::Error::Xml { err: SyncFailure::new(err) })?;
+        .map_err(|err| error::Error::Xml {
+            err: SyncFailure::new(err),
+        })?;
     let name = reader
         .read("//info/name/text()")
-        .map_err(|err| error::Error::Xml { err: SyncFailure::new(err) })?;
-    let version: String = reader
-        .read("//info/version/text()")
-        .map_err(|err| error::Error::Xml { err: SyncFailure::new(err) })?;
+        .map_err(|err| error::Error::Xml {
+            err: SyncFailure::new(err),
+        })?;
+    let version: String =
+        reader
+            .read("//info/version/text()")
+            .map_err(|err| error::Error::Xml {
+                err: SyncFailure::new(err),
+            })?;
 
-    Ok(AppInfo { id: id, name: name, version: Version::parse(&version)? })
+    Ok(AppInfo {
+        id: id,
+        name: name,
+        version: Version::parse(&version)?,
+    })
 }
 
 pub fn get_appinfo(app_path: &Path) -> Result<AppInfo, Error> {
