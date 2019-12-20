@@ -1,7 +1,5 @@
 #[macro_use]
 extern crate failure;
-extern crate semver;
-extern crate xpath_reader;
 
 pub mod error;
 
