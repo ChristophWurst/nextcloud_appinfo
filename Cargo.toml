@@ -14,5 +14,5 @@ edition = "2018"
 
 [dependencies]
 failure = "0.1"
-semver = "0.9"
+semver = "0.10"
 xpath_reader = "0.5"
