@@ -1,14 +1,9 @@
-#[macro_use]
-extern crate failure;
-
 pub mod error;
 
-use std::fs::File;
-use std::io::prelude::*;
-use std::io::{self, BufReader};
+use std::fs::read_to_string;
 use std::path::{Path, PathBuf};
 
-use failure::{Error, SyncFailure};
+use error::Error;
 pub use semver::Version;
 use xpath_reader::{Context, Reader};
 
@@ -31,38 +26,17 @@ impl AppInfo {
     }
 }
 
-fn load_appinfo(file_path: &Path) -> Result<String, io::Error> {
-    let file = File::open(file_path)?;
-    let mut buf_reader = BufReader::new(file);
-    let mut contents = String::new();
-    buf_reader.read_to_string(&mut contents)?;
-    Ok(contents)
-}
-
-fn parse_appinfo(xml: &String) -> Result<AppInfo, Error> {
+fn parse_appinfo(xml: &str) -> Result<AppInfo, Error> {
     let context = Context::new();
-    let reader = Reader::from_str(xml, Some(&context)).map_err(|err| SyncFailure::new(err))?;
+    let reader = Reader::from_str(xml, Some(&context))?;
 
-    let id = reader
-        .read("//info/id/text()")
-        .map_err(|err| error::Error::Xml {
-            err: SyncFailure::new(err),
-        })?;
-    let name = reader
-        .read("//info/name/text()")
-        .map_err(|err| error::Error::Xml {
-            err: SyncFailure::new(err),
-        })?;
-    let version: String =
-        reader
-            .read("//info/version/text()")
-            .map_err(|err| error::Error::Xml {
-                err: SyncFailure::new(err),
-            })?;
+    let id = reader.read("//info/id/text()")?;
+    let name = reader.read("//info/name/text()")?;
+    let version: String = reader.read("//info/version/text()")?;
 
     Ok(AppInfo {
-        id: id,
-        name: name,
+        id,
+        name,
         version: Version::parse(&version)?,
     })
 }
@@ -72,9 +46,9 @@ pub fn get_appinfo(app_path: &Path) -> Result<AppInfo, Error> {
     appinfo_path.push("appinfo");
     appinfo_path.push("info.xml");
     if !appinfo_path.exists() {
-        bail!(error::Error::InfoXmlMissing);
+        return Err(error::Error::InfoXmlMissing);
     }
-    let xml = load_appinfo(appinfo_path.as_path())?;
+    let xml = read_to_string(appinfo_path.as_path())?;
     parse_appinfo(&xml)
 }
 
@@ -117,8 +91,7 @@ mod tests {
 
     #[test]
     fn it_parses_basic_info() {
-        let xml = APPINFO1.to_owned();
-        let actual = parse_appinfo(&xml).unwrap();
+        let actual = parse_appinfo(APPINFO1).unwrap();
 
         assert_eq!("mail", actual.id);
         assert_eq!("Mail", actual.name);
@@ -126,21 +99,12 @@ mod tests {
     }
 
     #[test]
-    fn it_loads_the_appinfo_file() {
-        let path = Path::new("examples/twofactor_u2f/appinfo/info.xml");
-
-        let file = load_appinfo(&path).unwrap();
-
-        assert!(file.len() > 0);
-    }
-
-    #[test]
     fn it_handles_notfound_errors() {
         // There's no appinfo/info.xml in here
         let path = Path::new(".");
 
-        let result = load_appinfo(&path);
+        let result = get_appinfo(&path);
 
-        assert!(result.is_err());
+        assert!(matches!(result, Err(Error::InfoXmlMissing)));
     }
 }
