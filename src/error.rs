@@ -1,10 +1,19 @@
-use failure::SyncFailure;
+use semver::SemVerError;
+use std::io;
+use thiserror::Error;
 use xpath_reader::Error as XPathError;
 
-#[derive(Debug, Fail)]
+#[derive(Debug, Error)]
 pub enum Error {
-    #[fail(display = "info.xml missing")]
+    #[error("info.xml missing")]
     InfoXmlMissing,
-    #[fail(display = "XML error: {:?}", err)]
-    Xml { err: SyncFailure<XPathError> },
+    #[error("failed to read info.xml")]
+    IO(#[from] io::Error),
+    #[error("XML error: {err}")]
+    Xml {
+        #[from]
+        err: XPathError,
+    },
+    #[error("malformed version number")]
+    SemVer(#[from] SemVerError),
 }
