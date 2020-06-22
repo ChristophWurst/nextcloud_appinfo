@@ -1,6 +1,6 @@
 [package]
 name = "nextcloud_appinfo"
-version = "0.5.0"
+version = "0.6.0"
 authors = ["Christoph Wurst <christoph@winzerhof-wurst.at>"]
 description = "Library to read app info of an Nextcloud app"
 readme = "README.md"
