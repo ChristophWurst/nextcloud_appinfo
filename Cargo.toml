@@ -14,5 +14,5 @@ edition = "2018"
 
 [dependencies]
 thiserror = "1.0"
-semver = "0.10"
+semver = "1.0"
 xpath_reader = "0.5"
