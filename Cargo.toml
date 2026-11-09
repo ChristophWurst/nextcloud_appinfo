@@ -13,6 +13,6 @@ exclude = [
 edition = "2018"
 
 [dependencies]
-thiserror = "1.0"
+thiserror = "2.0"
 semver = "0.11"
 xpath_reader = "0.5"
